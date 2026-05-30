@@ -64,7 +64,7 @@ TODAY. Link to the relevant forms / USCIS pages.
 
 ## Disclaimer
 
-Fola Form Inc. is a software company, not a law firm. Nothing in
+Fola Form is a software company, not a law firm. Nothing in
 this article is legal advice. Verify against the linked primary
 source and consult a licensed immigration attorney.
 `;

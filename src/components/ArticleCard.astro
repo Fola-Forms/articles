@@ -1,34 +1,42 @@
 ---
 /**
- * Compact list-page card. Reused by the homepage list, tag index,
- * authority index, and category index — same shape across all of
- * them so a returning reader has a single mental model.
+ * News-card-shaped article tile. Used on the homepage grid, the
+ * authority indexes, the tag indexes, and the category indexes.
+ *
+ * Variant `featured` enlarges the title + lede and is only used
+ * for the homepage hero (first card).
  */
 import type { CollectionEntry } from 'astro:content';
 
 export interface Props {
   entry: CollectionEntry<'articles'>;
+  variant?: 'default' | 'featured' | 'compact';
 }
 
-const { entry } = Astro.props;
+const { entry, variant = 'default' } = Astro.props;
 const { data } = entry;
-const href = `/articles/${entry.id.replace(/\.(md|mdx)$/, '')}`;
+const slug = entry.id.replace(/\.(md|mdx)$/, '');
+const href = `/articles/${slug}`;
 const dateDisplay = data.publishDate.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
 });
 ---
-<a class="card" href={href}>
+<a class={`card card--${variant}`} href={href}>
   <div class="card__eyebrow">
     <span class="pill" data-authority={data.authority}>{data.authority}</span>
     <time datetime={data.publishDate.toISOString()}>{dateDisplay}</time>
   </div>
   <h2 class="card__title">{data.title}</h2>
-  <p class="card__lede">{data.description}</p>
+  {variant !== 'compact' && (
+    <p class="card__lede">{data.description}</p>
+  )}
   <div class="card__foot">
-    <span>{data.category.replace(/-/g, ' ')}</span>
-    {data.readingMinutes && <span>· {data.readingMinutes} min</span>}
+    <span class="card__category">{data.category.replace(/-/g, ' ')}</span>
+    {data.readingMinutes && (
+      <span class="card__read">{data.readingMinutes} min</span>
+    )}
   </div>
 </a>
 
@@ -36,20 +44,21 @@ const dateDisplay = data.publishDate.toLocaleDateString('en-US', {
   .card {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 22px 24px;
-    background: var(--paper-raised);
+    background: var(--bg-raised);
     border: 1px solid var(--hairline);
     border-radius: var(--radius);
     text-decoration: none;
     color: var(--ink);
     transition: border-color 140ms ease, transform 140ms ease,
-      box-shadow 140ms ease;
+                box-shadow 140ms ease;
   }
   .card:hover {
     border-color: var(--accent);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(26, 115, 232, 0.08);
+    box-shadow: var(--shadow-hover);
+    text-decoration: none;
   }
   .card__eyebrow {
     display: flex;
@@ -58,23 +67,86 @@ const dateDisplay = data.publishDate.toLocaleDateString('en-US', {
     color: var(--ink-mute);
     font-size: 12.5px;
   }
+  .card__eyebrow time {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-mute);
+  }
   .card__title {
-    font-size: 1.25rem;
-    line-height: 1.3;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.25;
     margin: 0;
+    color: var(--ink);
+    letter-spacing: -0.012em;
   }
   .card__lede {
     font-family: var(--font-serif);
-    font-size: 0.98rem;
+    font-size: 1rem;
     color: var(--ink-soft);
     line-height: 1.5;
     margin: 0;
+    /* Clamp lede to 4 lines on default cards */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .card__foot {
-    font-size: 12.5px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 4px;
+  }
+  .card__category {
+    font-family: var(--font-mono);
+    font-size: 11px;
     color: var(--ink-mute);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-top: auto;
+    letter-spacing: 0.08em;
+  }
+  .card__read {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Featured variant — first card on homepage */
+  .card--featured {
+    padding: 32px 36px;
+    background: linear-gradient(
+      135deg,
+      var(--bg-raised) 0%,
+      var(--bg-accent) 100%
+    );
+    border-color: var(--accent);
+  }
+  .card--featured .card__title {
+    font-size: 2.1rem;
+    line-height: 1.18;
+    letter-spacing: -0.022em;
+  }
+  .card--featured .card__lede {
+    font-size: 1.12rem;
+    -webkit-line-clamp: 5;
+  }
+  @media (max-width: 640px) {
+    .card { padding: 20px 22px; }
+    .card--featured { padding: 24px 22px; }
+    .card--featured .card__title { font-size: 1.6rem; }
+    .card__title { font-size: 1.18rem; }
+  }
+
+  /* Compact variant — sidebar / related-articles lists */
+  .card--compact {
+    padding: 16px 18px;
+    gap: 8px;
+  }
+  .card--compact .card__title {
+    font-size: 1.08rem;
+    line-height: 1.3;
   }
 </style>

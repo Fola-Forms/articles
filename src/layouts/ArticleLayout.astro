@@ -1,13 +1,12 @@
 ---
 /**
- * Single-article page layout. Renders the title, author byline,
- * source citation, backdated publish date, hero image, the
- * markdown body via <slot/>, and the mandatory disclaimer at the
- * bottom (re-asserted in the layout even though every article
- * includes one in its body — belt-and-braces in case an agent's
- * draft drops it).
+ * Single-article layout — eyebrow with authority + category, big
+ * serif title, lede, byline + dates + reading time, primary-source
+ * citation card, the article body via <slot/>, disclaimer, tag
+ * chips, "Was this article helpful?" feedback widget.
  */
 import BaseLayout from './BaseLayout.astro';
+import PageFeedback from '../components/PageFeedback.astro';
 import type { CollectionEntry } from 'astro:content';
 
 export interface Props {
@@ -16,26 +15,31 @@ export interface Props {
 
 const { entry } = Astro.props;
 const { data } = entry;
+const slug = entry.id.replace(/\.(md|mdx)$/, '');
 
-const canonical = new URL(
-  `/articles/${entry.id.replace(/\.(md|mdx)$/, '')}`,
-  Astro.site,
-).toString();
+const canonical = new URL(`/articles/${slug}`, Astro.site).toString();
 
-const publishedDisplay = data.publishDate.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
-const revisedDisplay = data.revisedDate?.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+const publishedDisplay = fmt(data.publishDate);
+const revisedDisplay = data.revisedDate ? fmt(data.revisedDate) : null;
 
 const heroAbs = data.heroImage
   ? new URL(data.heroImage.src, Astro.site).toString()
   : undefined;
+
+const authorityLong: Record<string, string> = {
+  USCIS: 'U.S. Citizenship and Immigration Services',
+  DOS: 'U.S. Department of State',
+  DHS: 'U.S. Department of Homeland Security',
+  'DOJ-EOIR': 'Executive Office for Immigration Review',
+  DOL: 'U.S. Department of Labor',
+  OTHER: 'Other authority',
+};
 ---
 <BaseLayout
   title={`${data.title} — Fola Articles`}
@@ -46,27 +50,29 @@ const heroAbs = data.heroImage
   modifiedTime={data.revisedDate?.toISOString()}
   isArticle={true}
 >
-  <article class="article shell">
-    <header class="article__head">
+  <article class="article">
+    <header class="article__head shell">
       <div class="article__eyebrow">
         <a
           class="pill"
           data-authority={data.authority}
-          href={`/authority/${data.authority}`}>{data.authority}</a
-        >
-        <span class="pill">{data.category.replace(/-/g, ' ')}</span>
+          href={`/authority/${data.authority}`}
+          title={authorityLong[data.authority] ?? data.authority}
+        >{data.authority}</a>
+        <a class="pill" href={`/tags/${data.category}`}
+        >{data.category.replace(/-/g, ' ')}</a>
       </div>
       <h1 class="article__title">{data.title}</h1>
       <p class="article__lede">{data.description}</p>
       <div class="article__meta">
-        <span>{data.author}</span>
-        <span>·</span>
+        <span class="article__byline">By {data.author}</span>
+        <span class="article__sep">·</span>
         <time datetime={data.publishDate.toISOString()}>
-          Published {publishedDisplay}
+          {publishedDisplay}
         </time>
         {revisedDisplay && (
           <>
-            <span>·</span>
+            <span class="article__sep">·</span>
             <time datetime={data.revisedDate!.toISOString()}>
               Revised {revisedDisplay}
             </time>
@@ -74,7 +80,7 @@ const heroAbs = data.heroImage
         )}
         {data.readingMinutes && (
           <>
-            <span>·</span>
+            <span class="article__sep">·</span>
             <span>{data.readingMinutes} min read</span>
           </>
         )}
@@ -82,174 +88,272 @@ const heroAbs = data.heroImage
     </header>
 
     {data.heroImage && (
-      <figure class="article__hero">
+      <figure class="article__hero shell">
         <img
           src={data.heroImage.src}
           alt={data.heroAlt ?? data.title}
           width={data.heroImage.width}
           height={data.heroImage.height}
+          loading="eager"
         />
       </figure>
     )}
 
-    <aside class="article__source">
-      <strong>Primary source.</strong>{' '}
-      <a href={data.sourceUrl} target="_blank" rel="noopener noreferrer">
-        {data.sourceUrl}
-      </a>
-      {data.sourcePdf && (
-        <>
-          {' '}— <a href={data.sourcePdf} target="_blank" rel="noopener">
-            download PDF
+    <div class="shell">
+      <aside class="article__source" aria-label="Primary source">
+        <span class="article__source-label">Primary source</span>
+        <a class="article__source-link" href={data.sourceUrl}
+           target="_blank" rel="noopener noreferrer">
+          {data.sourceUrl}
+        </a>
+        {data.sourcePdf && (
+          <a class="article__source-pdf" href={data.sourcePdf}
+             target="_blank" rel="noopener">
+            <span aria-hidden="true">⬇</span> Download PDF
           </a>
-        </>
-      )}
-    </aside>
+        )}
+      </aside>
 
-    <div class="article__body">
-      <slot />
+      <div class="article__body">
+        <slot />
+      </div>
+
+      <aside class="article__disclaimer">
+        <strong>Disclaimer.</strong> Fola Form is a software company,
+        not a law firm. Nothing on this page is legal advice and
+        reading it does not create an attorney-client relationship.
+        Immigration law is high-stakes and fact-specific; consult a
+        licensed immigration attorney before acting on anything you
+        read here. Policy can change without notice — verify against
+        the primary source linked above.
+        <span class="article__disclaimer-aux">
+          Some sections may be drafted with editorial assistance and
+          reviewed before publication.
+        </span>
+      </aside>
+
+      <nav class="article__tags" aria-label="Tags">
+        {data.tags.map((t) => (
+          <a class="pill" href={`/tags/${t}`}>#{t}</a>
+        ))}
+      </nav>
+
+      <PageFeedback />
     </div>
-
-    <hr class="article__hr" />
-
-    <aside class="article__disclaimer">
-      <strong>Disclaimer.</strong> Fola Form Inc. is a software
-      company, not a law firm. Nothing on this page is legal advice
-      and reading it does not create an attorney-client
-      relationship. Immigration law is high-stakes and
-      fact-specific; consult a licensed immigration attorney before
-      acting on anything you read here. Policy can change without
-      notice — verify against the primary source linked above.
-      <span class="article__disclaimer-aux">
-        Some sections may be drafted with editorial assistance and
-        reviewed before publication.
-      </span>
-    </aside>
-
-    <nav class="article__tags" aria-label="Tags">
-      {data.tags.map((t) => (
-        <a class="pill" href={`/tags/${t}`}>#{t}</a>
-      ))}
-    </nav>
   </article>
 </BaseLayout>
 
 <style>
-  .article {
-    padding: 36px 0 0;
-  }
   .article__head {
-    margin-bottom: 28px;
+    padding-top: 56px;
+    padding-bottom: 24px;
+  }
+  @media (max-width: 640px) {
+    .article__head { padding-top: 32px; }
   }
   .article__eyebrow {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
   }
   .article__title {
-    margin: 0 0 12px;
-    font-size: 2.6rem;
-    line-height: 1.18;
-  }
-  @media (max-width: 640px) {
-    .article__title {
-      font-size: 1.9rem;
-    }
+    font-family: var(--font-display);
+    margin: 0 0 16px;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -0.028em;
+    color: var(--ink);
+    max-width: 28ch;
   }
   .article__lede {
     font-family: var(--font-serif);
-    font-size: 1.2rem;
-    line-height: 1.5;
+    font-size: 1.25rem;
+    line-height: 1.55;
     color: var(--ink-soft);
-    margin: 0 0 18px;
+    margin: 0 0 22px;
+    max-width: 58ch;
+    font-weight: 400;
   }
   .article__meta {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
     color: var(--ink-mute);
-    font-size: 13.5px;
+    font-size: 14px;
+  }
+  .article__byline {
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .article__sep {
+    color: var(--ink-faint);
   }
 
   .article__hero {
-    margin: 0 0 28px;
+    margin: 12px auto 32px;
   }
   .article__hero img {
     width: 100%;
     border-radius: var(--radius);
+    border: 1px solid var(--hairline);
   }
 
   .article__source {
-    background: var(--accent-soft);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    background: var(--bg-accent);
     border: 1px solid var(--accent);
     color: var(--accent-ink);
     border-radius: var(--radius-sm);
-    padding: 12px 16px;
-    margin: 0 0 28px;
+    padding: 14px 18px;
+    margin: 0 0 36px;
     font-size: 14.5px;
-    word-break: break-all;
+    max-width: var(--measure);
   }
-  .article__source a {
+  .article__source-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
     color: var(--accent-ink);
+    flex-shrink: 0;
+  }
+  .article__source-link {
+    flex: 1;
+    color: var(--accent-ink);
+    word-break: break-all;
+    text-decoration-color: color-mix(in srgb, var(--accent-ink) 30%, transparent);
+  }
+  .article__source-pdf {
+    background: var(--accent);
+    color: #fff !important;
+    padding: 6px 12px;
+    border-radius: var(--radius-xs);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .article__source-pdf:hover {
+    background: var(--accent-ink);
+    color: #fff !important;
   }
 
   .article__body {
     max-width: var(--measure);
-    font-size: 1.05rem;
-    line-height: 1.7;
+    font-family: var(--font-serif);
+    font-size: 1.08rem;
+    line-height: 1.72;
+    color: var(--ink);
   }
   .article__body :global(h2) {
-    border-top: 1px solid var(--hairline);
-    padding-top: 1.2em;
+    font-family: var(--font-display);
+    border-top: 1px solid var(--hairline-light);
+    padding-top: 1.4em;
+    margin-top: 1.8em;
+    font-size: 1.7rem;
+    letter-spacing: -0.02em;
   }
   .article__body :global(h2:first-child) {
     border-top: 0;
     padding-top: 0;
+    margin-top: 0.4em;
+  }
+  .article__body :global(h3) {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    margin-top: 1.6em;
+    letter-spacing: -0.012em;
+  }
+  .article__body :global(p) {
+    margin: 1em 0;
   }
   .article__body :global(ul),
   .article__body :global(ol) {
     padding-left: 1.4em;
+    margin: 1em 0;
   }
   .article__body :global(li) {
-    margin: 0.4em 0;
+    margin: 0.5em 0;
   }
   .article__body :global(strong) {
     color: var(--ink);
+    font-weight: 600;
   }
-
-  .article__hr {
-    margin: 40px 0 24px;
+  .article__body :global(a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .article__body :global(a:hover) {
+    color: var(--accent-ink);
+    text-decoration-color: currentColor;
+  }
+  .article__body :global(blockquote) {
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .article__body :global(hr) {
+    margin: 36px 0;
     border: 0;
     border-top: 1px solid var(--hairline);
   }
+  .article__body :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6em 0;
+    font-family: var(--font-sans);
+    font-size: 0.96rem;
+  }
+  .article__body :global(th),
+  .article__body :global(td) {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--hairline-light);
+  }
+  .article__body :global(th) {
+    background: var(--bg-sunken);
+    font-weight: 600;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
   .article__disclaimer {
-    background: var(--amber-soft);
+    background: var(--bg-amber);
     border-left: 3px solid var(--amber);
     color: var(--amber);
-    padding: 14px 18px;
+    padding: 16px 20px;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.6;
     max-width: var(--measure);
+    margin-top: 48px;
   }
-  /* Tiny ancillary line tucked at the end of the disclaimer
-   * block — same paragraph, just one notch quieter visually so
-   * it reads as a closing aside rather than a load-bearing
-   * statement. Color and weight are dialed back; size matches
-   * a footnote. */
+  .article__disclaimer strong {
+    font-weight: 700;
+  }
   .article__disclaimer-aux {
     display: inline;
     font-size: 11px;
     color: var(--ink-faint);
     opacity: 0.7;
-    margin-left: 2px;
+    margin-left: 4px;
   }
   .article__tags {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 28px 0 0;
+    margin: 32px 0 0;
     max-width: var(--measure);
   }
 </style>

@@ -1,32 +1,25 @@
 ---
 /**
- * Shared HTML shell — head with SEO meta, header nav, main slot,
- * footer. Every page on articles.folaform.com extends this.
+ * Shared HTML shell — head with SEO meta, header with logo + nav +
+ * theme toggle, main slot, structured footer. Every page on
+ * articles.folaform.com extends this.
  *
- * Props are intentionally minimal — the article-detail layout
- * passes a richer set (canonical, OG image, twitter card) while
- * the list / tag / authority pages pass the basics.
+ * The inline boot script in <head> applies the user's persisted
+ * theme choice before paint, so dark-mode users don't get a flash
+ * of light content on navigation.
  */
 import '../styles/global.css';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import logoLight from '../assets/fola-logo-light.png';
+import logoDark  from '../assets/fola-logo-dark.png';
 
 export interface Props {
-  /** <title> + OG title — defaults to the site brand. */
   title: string;
-  /** <meta name="description"> + OG description. */
   description: string;
-  /** Canonical URL for this page. Pass the full absolute URL so
-   *  Google + social cards link back here unambiguously. */
   canonical: string;
-  /** OG image absolute URL. Falls back to the site default. */
   ogImage?: string;
-  /** ISO publish date for article pages — added as <meta
-   *  property="article:published_time"> for OG / Twitter. */
   publishedTime?: string;
-  /** ISO modified date — added as <meta
-   *  property="article:modified_time">. */
   modifiedTime?: string;
-  /** Set true on article pages so the OG type flips to "article"
-   *  (default "website"). */
   isArticle?: boolean;
 }
 
@@ -34,11 +27,15 @@ const {
   title,
   description,
   canonical,
-  ogImage = 'https://articles.folaform.com/og-default.png',
+  ogImage = 'https://articles.folaform.com/og-image.png',
   publishedTime,
   modifiedTime,
   isArticle = false,
 } = Astro.props;
+
+const path = Astro.url.pathname;
+const isActive = (prefix: string) =>
+  prefix === '/' ? path === '/' : path.startsWith(prefix);
 ---
 <!doctype html>
 <html lang="en">
@@ -46,10 +43,26 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f4f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17181b" media="(prefers-color-scheme: dark)" />
 
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+
+    <!-- Pre-paint theme application — eliminates flash on dark mode.
+         Reads localStorage; falls through to prefers-color-scheme. -->
+    <script is:inline>
+      (function () {
+        try {
+          var v = localStorage.getItem('fola-articles-theme');
+          if (v === 'dark' || v === 'light') {
+            document.documentElement.dataset.theme = v;
+          }
+        } catch (_) {}
+      })();
+    </script>
 
     <!-- OpenGraph -->
     <meta property="og:type" content={isArticle ? 'article' : 'website'} />
@@ -71,7 +84,7 @@ const {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
-    <!-- RSS discovery for feed readers + Google Discover -->
+    <!-- RSS discovery -->
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -79,24 +92,51 @@ const {
       href="/rss.xml"
     />
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <!-- Favicons (light + dark + Apple touch + icon-192) -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon-dark.ico" sizes="any"
+          media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/icon-512.png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
   </head>
   <body>
     <header class="site-header">
       <div class="shell site-header__inner">
-        <a class="site-header__brand" href="/">Fola Articles</a>
+        <a class="site-header__brand" href="/">
+          <img class="brand-logo-light" src={logoLight.src} alt="Fola Form" width="120" height="32" />
+          <img class="brand-logo-dark"  src={logoDark.src}  alt="Fola Form" width="120" height="32" />
+          <span class="site-header__brand-text">
+            Articles<span> · Fola Form</span>
+          </span>
+        </a>
         <nav class="site-header__nav" aria-label="Primary">
-          <a href="/authority/USCIS">USCIS</a>
-          <a href="/authority/DOS">DOS</a>
-          <a href="/authority/DHS">DHS</a>
-          <a href="/tags">Topics</a>
+          <a href="/"
+             class="site-header__nav-key"
+             aria-current={isActive('/') && path === '/' ? 'page' : undefined}
+          >Latest</a>
+          <a href="/authority/USCIS"
+             aria-current={isActive('/authority/USCIS') ? 'page' : undefined}
+          >USCIS</a>
+          <a href="/authority/DOS"
+             aria-current={isActive('/authority/DOS') ? 'page' : undefined}
+          >DOS</a>
+          <a href="/authority/DHS"
+             aria-current={isActive('/authority/DHS') ? 'page' : undefined}
+          >DHS</a>
+          <a href="/authority/DOJ-EOIR"
+             aria-current={isActive('/authority/DOJ-EOIR') ? 'page' : undefined}
+          >EOIR</a>
+          <a href="/tags"
+             aria-current={isActive('/tags') ? 'page' : undefined}
+          >Topics</a>
           <a
-            href="https://folaform.com"
+            href="https://docs.folaform.com"
             target="_blank"
             rel="noopener"
-            >Workspace ↗</a
-          >
+            class="site-header__nav-key"
+          >Docs ↗</a>
+          <ThemeToggle />
         </nav>
       </div>
     </header>
@@ -106,29 +146,57 @@ const {
     </main>
 
     <footer class="site-footer">
-      <div class="shell site-footer__inner">
-        <div>
-          <strong>Fola Form Inc.</strong> — compliance forms engine
-          for immigration practice.
-          <br />
-          <span>
-            Educational content only. Not legal advice. We are not a
-            law firm.
-          </span>
+      <div class="shell">
+        <div class="site-footer__inner">
+          <div class="site-footer__brand">
+            <div class="site-footer__brand-row">
+              <img class="brand-logo-light" src={logoLight.src} alt="Fola Form" width="120" height="24" />
+              <img class="brand-logo-dark"  src={logoDark.src}  alt="Fola Form" width="120" height="24" />
+              <strong>Articles</strong>
+            </div>
+            <p style="margin:0;max-width:46ch;line-height:1.55;">
+              Plain-English breakdowns of every USCIS memo, DOS cable,
+              and DHS rule that touches U.S. immigration practice —
+              backdated to the agency's own publication date.
+            </p>
+          </div>
+
+          <div class="site-footer__col">
+            <h4>By authority</h4>
+            <ul>
+              <li><a href="/authority/USCIS">USCIS</a></li>
+              <li><a href="/authority/DOS">DOS</a></li>
+              <li><a href="/authority/DHS">DHS</a></li>
+              <li><a href="/authority/DOJ-EOIR">DOJ-EOIR</a></li>
+              <li><a href="/authority/DOL">DOL</a></li>
+            </ul>
+          </div>
+
+          <div class="site-footer__col">
+            <h4>Browse</h4>
+            <ul>
+              <li><a href="/">Latest</a></li>
+              <li><a href="/tags">All topics</a></li>
+              <li><a href="/rss.xml">RSS feed</a></li>
+            </ul>
+          </div>
+
+          <div class="site-footer__col">
+            <h4>Fola Form</h4>
+            <ul>
+              <li><a href="https://folaform.com" target="_blank" rel="noopener">Workspace ↗</a></li>
+              <li><a href="https://docs.folaform.com" target="_blank" rel="noopener">Documentation ↗</a></li>
+              <li><a href="https://folaform.com/legal/privacy">Privacy</a></li>
+              <li><a href="https://folaform.com/legal/terms">Terms</a></li>
+            </ul>
+          </div>
         </div>
-        <nav aria-label="Footer">
-          <a href="/rss.xml">RSS</a>
-          <a href="https://folaform.com" target="_blank" rel="noopener"
-            >folaform.com</a
-          >
-          <a
-            href="https://docs.folaform.com"
-            target="_blank"
-            rel="noopener">Docs</a
-          >
-          <a href="https://folaform.com/legal/privacy">Privacy</a>
-          <a href="https://folaform.com/legal/terms">Terms</a>
-        </nav>
+
+        <p class="site-footer__legal">
+          © {new Date().getFullYear()} Fola Form — compliance forms
+          engine for immigration practice. Educational content only.
+          Not legal advice. We are not a law firm.
+        </p>
       </div>
     </footer>
   </body>

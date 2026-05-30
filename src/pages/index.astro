@@ -4,14 +4,14 @@ import ArticleCard from '../components/ArticleCard.astro';
 import { getCollection } from 'astro:content';
 
 /**
- * Homepage. Lists every PUBLISHED article (draft: false), sorted
- * by publishDate descending — the most recent USCIS / DOS / DHS
- * activity surfaces first.
+ * Homepage. News-shaped layout:
+ *   · Hero with brand statement + search bar
+ *   · Filter chips (Latest / authority / category)
+ *   · Featured most-recent article + 6-up secondary grid
+ *   · "Browse all" CTA at the bottom
  *
- * Authority + category filter chips above the grid; the
- * /authority/[slug] and /tags/[tag] pages render the same card
- * grid filtered down server-side, which keeps each filtered URL
- * shareable and indexable.
+ * Search uses /search.json (built statically by search.json.ts).
+ * The script loads it lazily on first focus of the input.
  */
 const entries = (await getCollection('articles'))
   .filter((e) => !e.data.draft)
@@ -20,86 +20,472 @@ const entries = (await getCollection('articles'))
   );
 
 const authorities = ['USCIS', 'DOS', 'DHS', 'DOJ-EOIR', 'DOL'] as const;
+const categories = [
+  'family-based',
+  'employment-based',
+  'humanitarian',
+  'naturalization',
+  'nonimmigrant',
+  'removal-defense',
+  'consular-processing',
+  'work-authorization',
+  'visa-bulletin',
+  'enforcement',
+] as const;
+
+const featured = entries[0];
+const recent = entries.slice(1, 13);
+const restCount = entries.length - 13;
 ---
 <BaseLayout
   title="Fola Articles — USCIS, DOS, and DHS immigration policy, explained"
-  description="Plain-English breakdowns of every USCIS policy memo, DOS visa cable, and DHS rule that affects immigration practice. Backdated to the agency's own announcement date."
+  description="Plain-English breakdowns of every USCIS memo, DOS visa cable, and DHS rule that affects immigration practice. Backdated to the agency's own announcement date."
   canonical="https://articles.folaform.com/"
 >
-  <section class="hero shell">
-    <h1>Immigration policy, written plainly.</h1>
-    <p class="hero__lede">
-      Every USCIS memo, DOS cable, and DHS rule that touches
-      immigration practice — read once by an editor, broken down for
-      practitioners and the people they represent. Backdated to the
-      agency's own announcement date so the timeline reads
-      faithfully.
-    </p>
-    <div class="hero__chips" role="navigation" aria-label="Filter by authority">
-      <a class="pill" href="/">All</a>
-      {authorities.map((a) => (
-        <a class="pill" data-authority={a} href={`/authority/${a}`}>
-          {a}
-        </a>
-      ))}
+  <!-- ───── Hero ───── -->
+  <section class="hero">
+    <div class="shell">
+      <p class="hero__eyebrow">Fola Articles · Editorial</p>
+      <h1 class="hero__title">
+        Immigration policy,<br/>written plainly.
+      </h1>
+      <p class="hero__lede">
+        Every USCIS memo, DOS cable, and DHS rule that touches
+        immigration practice — read once by an editor, broken down for
+        practitioners and the people they represent. Backdated to the
+        agency's own announcement date so the timeline reads
+        faithfully.
+      </p>
+
+      <!-- ───── Search bar ───── -->
+      <form class="search" role="search" id="search-form"
+            onsubmit="return false">
+        <span class="search__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="16" y1="16" x2="21" y2="21"/>
+          </svg>
+        </span>
+        <input
+          id="search-input"
+          type="search"
+          class="search__input"
+          placeholder="Search 130+ articles — try 'I-485', 'PERM', 'asylum', or 'CSPA'"
+          autocomplete="off"
+          aria-label="Search articles"
+        />
+        <kbd class="search__kbd" aria-hidden="true">/</kbd>
+      </form>
+
+      <!-- ───── Filter chips ───── -->
+      <div class="filters" role="tablist" aria-label="Filter by section">
+        <button type="button" class="filter is-active" data-filter="latest">
+          Latest
+        </button>
+        {authorities.map((a) => (
+          <a class="filter" href={`/authority/${a}`} data-authority={a}>
+            {a}
+          </a>
+        ))}
+        <span class="filter__sep" aria-hidden="true">·</span>
+        {categories.slice(0, 5).map((c) => (
+          <a class="filter" href={`/tags/${c}`}>
+            {c.replace(/-/g, ' ')}
+          </a>
+        ))}
+        <a class="filter filter--more" href="/tags">All topics &rarr;</a>
+      </div>
     </div>
   </section>
 
-  <section class="list shell" aria-label="Latest articles">
-    {entries.length === 0 ? (
-      <p class="empty">
-        No articles published yet. Check back soon — the writer
-        agents are reading USCIS memos right now.
-      </p>
-    ) : (
-      <div class="grid">
-        {entries.map((entry) => <ArticleCard entry={entry} />)}
+  <!-- ───── Search results (hidden until typing) ───── -->
+  <section class="results shell" id="results" hidden>
+    <h2 class="results__head">
+      <span id="results-count"></span>
+      <button type="button" class="results__clear" id="results-clear">
+        Clear search
+      </button>
+    </h2>
+    <div class="results__grid" id="results-grid"></div>
+    <p class="results__empty" id="results-empty" hidden>
+      No articles match — try a different keyword, or
+      <a href="/tags">browse all topics</a>.
+    </p>
+  </section>
+
+  <!-- ───── Featured + Recent grid ───── -->
+  <section class="latest shell" id="latest" aria-label="Latest articles">
+    {featured && (
+      <div class="latest__featured">
+        <p class="latest__eyebrow">Most recent</p>
+        <ArticleCard entry={featured} variant="featured" />
+      </div>
+    )}
+
+    {recent.length > 0 && (
+      <>
+        <p class="latest__eyebrow latest__eyebrow--gap">
+          More from the editor
+        </p>
+        <div class="latest__grid">
+          {recent.map((entry) => <ArticleCard entry={entry} />)}
+        </div>
+      </>
+    )}
+
+    {restCount > 0 && (
+      <div class="latest__more">
+        <a class="cta" href="/tags">
+          Browse all {entries.length} articles &rarr;
+        </a>
       </div>
     )}
   </section>
 </BaseLayout>
 
+<script is:inline>
+  (function () {
+    const KEY = '/';
+    let index = null;
+    let loaded = false;
+
+    const input  = document.getElementById('search-input');
+    const form   = document.getElementById('search-form');
+    const out    = document.getElementById('results');
+    const grid   = document.getElementById('results-grid');
+    const count  = document.getElementById('results-count');
+    const empty  = document.getElementById('results-empty');
+    const clear  = document.getElementById('results-clear');
+    const latest = document.getElementById('latest');
+
+    function loadIndex() {
+      if (loaded) return Promise.resolve();
+      loaded = true;
+      return fetch('/search.json')
+        .then((r) => r.json())
+        .then((j) => { index = j.items || []; })
+        .catch(() => { index = []; });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;',
+        '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    function match(item, q) {
+      if (!q) return true;
+      const needles = q.toLowerCase().split(/\s+/).filter(Boolean);
+      const hay = (
+        item.title + ' ' + item.description + ' ' +
+        item.tags.join(' ') + ' ' + item.authority + ' ' +
+        item.category
+      ).toLowerCase();
+      return needles.every((n) => hay.includes(n));
+    }
+
+    function fmt(iso) {
+      try {
+        return new Date(iso).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'short', day: 'numeric'
+        });
+      } catch (_) { return iso; }
+    }
+
+    function renderResults(q) {
+      if (!index) return;
+      const hits = q
+        ? index.filter((i) => match(i, q)).slice(0, 60)
+        : index.slice(0, 24);
+      grid.innerHTML = hits.map((i) => `
+        <a class="card card--compact" href="${i.href}">
+          <div class="card__eyebrow">
+            <span class="pill" data-authority="${i.authority}">${i.authority}</span>
+            <time datetime="${i.publishDate}">${fmt(i.publishDate)}</time>
+          </div>
+          <h2 class="card__title">${escapeHtml(i.title)}</h2>
+          <p class="card__lede">${escapeHtml(i.description)}</p>
+          <div class="card__foot">
+            <span class="card__category">${i.category.replace(/-/g, ' ')}</span>
+            ${i.readingMinutes ? `<span class="card__read">${i.readingMinutes} min</span>` : ''}
+          </div>
+        </a>
+      `).join('');
+      count.textContent = q
+        ? `${hits.length} result${hits.length === 1 ? '' : 's'} for "${q}"`
+        : 'Browse';
+      empty.hidden = hits.length > 0;
+    }
+
+    function showResults() {
+      out.hidden = false;
+      latest.hidden = true;
+    }
+    function hideResults() {
+      out.hidden = true;
+      latest.hidden = false;
+    }
+
+    let timer;
+    input.addEventListener('input', () => {
+      const q = input.value.trim();
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!q) { hideResults(); return; }
+        loadIndex().then(() => {
+          showResults();
+          renderResults(q);
+        });
+      }, 80);
+    });
+
+    input.addEventListener('focus', loadIndex);
+
+    clear.addEventListener('click', () => {
+      input.value = '';
+      hideResults();
+      input.focus();
+    });
+
+    // "/" focuses search anywhere
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === KEY && document.activeElement !== input
+          && !ev.metaKey && !ev.ctrlKey) {
+        ev.preventDefault();
+        input.focus();
+      }
+      if (ev.key === 'Escape' && document.activeElement === input) {
+        input.value = '';
+        hideResults();
+        input.blur();
+      }
+    });
+  })();
+</script>
+
 <style>
   .hero {
-    padding: 48px 0 28px;
-  }
-  .hero h1 {
-    margin: 0 0 14px;
-    font-size: 2.6rem;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    padding: 64px 0 32px;
+    background: linear-gradient(
+      180deg,
+      var(--bg-raised) 0%,
+      var(--bg) 100%
+    );
+    border-bottom: 1px solid var(--hairline-light);
   }
   @media (max-width: 640px) {
-    .hero h1 {
-      font-size: 2rem;
-    }
+    .hero { padding: 36px 0 24px; }
+  }
+  .hero__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .hero__title {
+    font-family: var(--font-display);
+    margin: 0 0 18px;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+    font-weight: 700;
   }
   .hero__lede {
     font-family: var(--font-serif);
     font-size: 1.18rem;
     line-height: 1.55;
     color: var(--ink-soft);
-    margin: 0 0 22px;
-    max-width: 64ch;
-  }
-  .hero__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    margin: 0 0 28px;
+    max-width: 60ch;
   }
 
-  .list {
-    padding-bottom: 36px;
+  /* ───── Search ───── */
+  .search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 720px;
+    margin: 0 0 22px;
+    padding: 4px 14px 4px 12px;
+    background: var(--bg-raised);
+    border: 1.5px solid var(--hairline);
+    border-radius: 9999px;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
   }
-  .grid {
+  .search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-low);
+  }
+  .search__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    color: var(--ink-mute);
+  }
+  .search__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .search__input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 10px 4px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+  }
+  .search__input::placeholder {
+    color: var(--ink-mute);
+  }
+  .search__kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border: 1px solid var(--hairline-shade);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    background: var(--bg);
+  }
+  @media (max-width: 640px) {
+    .search__kbd { display: none; }
+  }
+
+  /* ───── Filter chips ───── */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .filter {
+    padding: 7px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--hairline);
+    background: var(--bg-raised);
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 120ms ease, border-color 120ms ease,
+                color 120ms ease;
+  }
+  .filter:hover {
+    background: var(--bg-accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .filter.is-active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .filter[data-authority='USCIS']:hover { color: var(--accent-ink); }
+  .filter__sep {
+    color: var(--ink-faint);
+    padding: 0 2px;
+  }
+  .filter--more {
+    margin-left: auto;
+    color: var(--accent);
+  }
+
+  /* ───── Results grid (search) ───── */
+  .results {
+    padding: 36px 0;
+  }
+  .results__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 18px;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+  .results__clear {
+    background: transparent;
+    border: 1px solid var(--hairline);
+    color: var(--ink-mute);
+    padding: 6px 14px;
+    border-radius: var(--radius-xs);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .results__clear:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .results__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .results__empty {
+    margin: 36px 0;
+    padding: 28px;
+    text-align: center;
+    color: var(--ink-mute);
+    border: 1px dashed var(--hairline);
+    border-radius: var(--radius);
+  }
+
+  /* ───── Latest section ───── */
+  .latest {
+    padding: 44px 0 24px;
+  }
+  .latest__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+    font-weight: 600;
+  }
+  .latest__eyebrow--gap {
+    margin-top: 48px;
+  }
+  .latest__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 18px;
   }
-  .empty {
-    padding: 36px 0;
-    color: var(--ink-mute);
-    font-family: var(--font-serif);
-    font-size: 1.05rem;
+  .latest__more {
+    text-align: center;
+    margin-top: 36px;
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 22px;
+    border-radius: 9999px;
+    background: var(--ink);
+    color: var(--ink-invert) !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 140ms ease, transform 140ms ease;
+  }
+  .cta:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
   }
 </style>

@@ -1,0 +1,208 @@
+---
+/**
+ * "Was this article helpful?" widget — rendered at the bottom of
+ * every article. Mirrors the docs-site PageFeedback component so
+ * the two surfaces feel like one.
+ *
+ * Submissions POST to https://api.folaform.com/api/v1/articles/feedback
+ * (anonymous, no PII, just slug + rating + optional comment). The
+ * endpoint is rate-limited per-IP; client-side it's fire-and-forget
+ * with `keepalive` so navigation away doesn't abort the request.
+ */
+const slug = Astro.url.pathname;
+---
+<section class="article-feedback" aria-labelledby="article-feedback-head">
+  <h3 id="article-feedback-head" class="article-feedback__head">
+    Was this article helpful?
+  </h3>
+  <div class="article-feedback__row">
+    <button type="button"
+            class="article-feedback__btn"
+            data-rating="up"
+            aria-label="Yes, this was helpful">
+      <span class="article-feedback__icon" aria-hidden="true">👍</span>
+      <span>Yes</span>
+    </button>
+    <button type="button"
+            class="article-feedback__btn"
+            data-rating="down"
+            aria-label="No, this was not helpful">
+      <span class="article-feedback__icon" aria-hidden="true">👎</span>
+      <span>No</span>
+    </button>
+  </div>
+  <form class="article-feedback__form" hidden>
+    <label class="article-feedback__label" for="article-feedback-comment">
+      What could be better? (optional)
+    </label>
+    <textarea id="article-feedback-comment"
+              rows="3"
+              class="article-feedback__textarea"
+              placeholder="What were you looking for that wasn't here?"></textarea>
+    <button type="submit" class="article-feedback__submit">
+      Send feedback
+    </button>
+  </form>
+  <p class="article-feedback__thanks" hidden>
+    Thanks — noted.
+  </p>
+</section>
+
+<script is:inline define:vars={{ slug }}>
+  (function () {
+    const root = document.currentScript.previousElementSibling;
+    if (!root) return;
+    const buttons = root.querySelectorAll('[data-rating]');
+    const form = root.querySelector('.article-feedback__form');
+    const thanks = root.querySelector('.article-feedback__thanks');
+    const textarea = root.querySelector('textarea');
+    let chosen = null;
+
+    const post = (payload) => {
+      try {
+        fetch('https://api.folaform.com/api/v1/articles/feedback', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true,
+          mode: 'cors',
+        }).catch(() => {});
+      } catch (_) {}
+    };
+
+    const buildPayload = (rating, comment) => ({
+      pageSlug: slug,
+      helpful: rating === 'up',
+      comment: comment ? comment.slice(0, 2000) : null,
+    });
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        chosen = btn.dataset.rating;
+        buttons.forEach((b) => b.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
+        if (chosen === 'down') {
+          form.hidden = false;
+          textarea.focus();
+        } else {
+          post(buildPayload(chosen, null));
+          buttons.forEach((b) => b.disabled = true);
+          thanks.hidden = false;
+        }
+      });
+    });
+
+    if (form) {
+      form.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        post(buildPayload(chosen, textarea.value));
+        form.hidden = true;
+        buttons.forEach((b) => b.disabled = true);
+        thanks.hidden = false;
+      });
+    }
+  })();
+</script>
+
+<style>
+  .article-feedback {
+    margin: 4rem 0 1.5rem;
+    padding: 1.6rem 1.8rem;
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    border: 1px solid var(--hairline);
+    max-width: var(--measure);
+  }
+  .article-feedback__head {
+    margin: 0 0 0.9rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .article-feedback__row {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .article-feedback__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--hairline);
+    background: var(--bg);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease,
+                color 120ms ease;
+  }
+  .article-feedback__btn:hover {
+    background: var(--bg-accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .article-feedback__btn.is-selected {
+    background: var(--bg-accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .article-feedback__btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+  .article-feedback__icon {
+    font-size: 1.05em;
+    line-height: 1;
+  }
+  .article-feedback__form {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .article-feedback__label {
+    font-size: 0.92rem;
+    color: var(--ink-mute);
+  }
+  .article-feedback__textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--hairline-shade);
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+    resize: vertical;
+  }
+  .article-feedback__textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+  .article-feedback__submit {
+    align-self: flex-start;
+    padding: 0.55rem 1.2rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #ffffff;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .article-feedback__submit:hover {
+    background: var(--accent-ink);
+    border-color: var(--accent-ink);
+  }
+  .article-feedback__thanks {
+    margin: 0.9rem 0 0;
+    color: var(--ink-mute);
+    font-size: 0.95rem;
+  }
+</style>
