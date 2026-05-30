@@ -144,7 +144,15 @@ const authorityLong: Record<string, string> = {
 </BaseLayout>
 
 <style>
+  /* Header sits in the SAME 72ch column as the body below it, so
+     the title's left edge aligns with the first paragraph instead
+     of flushing left to the wider 1120px shell. The .shell class
+     on the same element still supplies the responsive horizontal
+     padding — .article__head's max-width just narrows the band. */
   .article__head {
+    max-width: var(--measure);
+    margin-left: auto;
+    margin-right: auto;
     padding-top: 56px;
     padding-bottom: 24px;
   }
