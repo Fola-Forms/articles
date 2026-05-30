@@ -44,7 +44,7 @@ const restCount = entries.length - 13;
 >
   <!-- ───── Hero ───── -->
   <section class="hero">
-    <div class="shell">
+    <div class="hero__inner">
       <p class="hero__eyebrow">Fola Articles · Editorial</p>
       <h1 class="hero__title">
         Immigration policy,<br/>written plainly.
@@ -137,7 +137,7 @@ const restCount = entries.length - 13;
 
     {restCount > 0 && (
       <div class="latest__more">
-        <a class="cta" href="/tags">
+        <a class="cta" href="/articles">
           Browse all {entries.length} articles &rarr;
         </a>
       </div>
@@ -297,13 +297,26 @@ const restCount = entries.length - 13;
     color: var(--ink);
     font-weight: 700;
   }
+  /* Full-bleed hero column. Overrides the global .shell's 1120px
+     ceiling so the hero stretches edge-to-edge of the viewport
+     with only a comfortable side gutter, matching the visual
+     intent of "this is the front page, take the whole width". */
+  .hero__inner {
+    max-width: none;
+    margin: 0;
+    padding: 0 clamp(20px, 5vw, 56px);
+  }
   .hero__lede {
     font-family: var(--font-serif);
     font-size: 1.18rem;
     line-height: 1.55;
     color: var(--ink-soft);
     margin: 0 0 28px;
-    max-width: 60ch;
+    /* Was 60ch — capped the lede at a thin column. Lifted so the
+       lede flows across the wider hero band; readability stays
+       good because the line-height is 1.55 and the font is
+       generous. */
+    max-width: 88ch;
   }
 
   /* ───── Search ───── */

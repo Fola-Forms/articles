@@ -1,0 +1,164 @@
+---
+/**
+ * /articles — full article index.
+ *
+ * Linked from the "Browse all N articles →" CTA on the homepage,
+ * the empty-search fallback, and any RSS/sitemap referrer. Lists
+ * every non-draft article grouped by year (newest first) so the
+ * reader can scan the entire archive without paging.
+ *
+ * For wide canvases this is the right shape: the homepage already
+ * shows the most-recent 13; this page is the rest. We avoid
+ * paginated listings to keep the URL stable for SEO.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+
+const entries = (await getCollection('articles'))
+  .filter((e) => !e.data.draft)
+  .sort(
+    (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf(),
+  );
+
+// Group by year so the archive reads as a timeline.
+const byYear = new Map<number, typeof entries>();
+for (const entry of entries) {
+  const year = entry.data.publishDate.getFullYear();
+  if (!byYear.has(year)) byYear.set(year, []);
+  byYear.get(year)!.push(entry);
+}
+const years = Array.from(byYear.keys()).sort((a, b) => b - a);
+---
+<BaseLayout
+  title={`All articles — Fola Articles (${entries.length} pieces)`}
+  description="Every USCIS memo, DOS cable, and DHS rule we've written about — grouped by publication year, newest first."
+  canonical="https://articles.folaform.com/articles"
+>
+  <section class="index shell">
+    <header class="index__head">
+      <p class="index__eyebrow">Fola Articles · Archive</p>
+      <h1 class="index__title">All articles</h1>
+      <p class="index__lede">
+        {entries.length} pieces, grouped by publication year. Each
+        article is backdated to the agency's own announcement date
+        so the timeline reads faithfully.
+      </p>
+      <nav class="index__quicknav" aria-label="Jump to year">
+        {years.map((y) => (
+          <a class="index__year-link" href={`#year-${y}`}>{y}</a>
+        ))}
+      </nav>
+    </header>
+
+    {years.map((year) => (
+      <section class="year" id={`year-${year}`} aria-label={`Articles from ${year}`}>
+        <h2 class="year__head">
+          <span class="year__num">{year}</span>
+          <span class="year__count">
+            {byYear.get(year)!.length}
+            {byYear.get(year)!.length === 1 ? ' article' : ' articles'}
+          </span>
+        </h2>
+        <div class="year__grid">
+          {byYear.get(year)!.map((entry) => (
+            <ArticleCard entry={entry} />
+          ))}
+        </div>
+      </section>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  .index {
+    padding: 44px 0 56px;
+  }
+  .index__head {
+    margin-bottom: 36px;
+  }
+  .index__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+  .index__title {
+    font-family: var(--font-display);
+    margin: 0 0 14px;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .index__lede {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    max-width: 70ch;
+  }
+  .index__quicknav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .index__year-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    border: 1px solid var(--hairline);
+    background: var(--bg-raised);
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-decoration: none;
+    transition: background 120ms ease, border-color 120ms ease,
+                color 120ms ease;
+  }
+  .index__year-link:hover {
+    background: var(--bg-accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .year {
+    margin-bottom: 44px;
+    /* Anchor jumps land just below the sticky site header. */
+    scroll-margin-top: 88px;
+  }
+  .year__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .year__num {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .year__count {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .year__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+</style>
