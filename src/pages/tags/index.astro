@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+/** Cloud of every tag in the corpus, with per-tag counts. Cheap
+ *  navigation aid the homepage links to as "Topics". */
+const all = (await getCollection('articles')).filter(
+  (e) => !e.data.draft,
+);
+const counts = new Map<string, number>();
+for (const entry of all) {
+  for (const tag of entry.data.tags) {
+    counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+}
+const tags = Array.from(counts.entries()).sort(
+  ([, a], [, b]) => b - a,
+);
+---
+<BaseLayout
+  title="Topics — Fola Articles"
+  description="Every topic we cover on USCIS, DOS, and DHS immigration policy. Pick a tag to drill in."
+  canonical="https://articles.folaform.com/tags"
+>
+  <section class="hero shell">
+    <h1>Topics</h1>
+    <p class="hero__lede">
+      Every tag in the corpus. The number next to each tag is how
+      many articles we've published on that topic.
+    </p>
+  </section>
+
+  <section class="cloud shell">
+    {tags.length === 0 ? (
+      <p>No tagged articles yet.</p>
+    ) : (
+      tags.map(([tag, n]) => (
+        <a class="pill" href={`/tags/${tag}`}>
+          #{tag} <span class="count">{n}</span>
+        </a>
+      ))
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 48px 0 16px;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+  }
+  .hero__lede {
+    font-family: var(--font-serif);
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 64ch;
+  }
+  .cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 48px;
+  }
+  .count {
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+</style>

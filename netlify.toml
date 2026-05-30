@@ -1,0 +1,38 @@
+# Netlify deployment config for articles.folaform.com
+#
+# Build runs `npm run build` which invokes Astro; output lands in
+# `dist/`. No SPA fallback — Astro emits one static HTML page per
+# route, so deep-links resolve directly.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Security headers — articles site has no auth surface, but keep
+# the basics tight. Mirror docs-site's posture so the two
+# subdomains share consistent hardening.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Source-doc PDFs (USCIS memos, DOS cables, DHS policy memos)
+# rarely change once captured — cache aggressively so a returning
+# reader doesn't re-download a 4 MB memo on every article view.
+[[headers]]
+  for = "/source-docs/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Hero images are referenced from article frontmatter; same
+# immutable posture.
+[[headers]]
+  for = "/hero/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

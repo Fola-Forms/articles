@@ -1,0 +1,24 @@
+---
+import { getCollection, render } from 'astro:content';
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+
+/**
+ * Renders one article per URL — /articles/<slug>. Static-built at
+ * build time so deep-linking + sharing produces a fully-formed
+ * static HTML page with SEO meta tags pre-rendered.
+ */
+export async function getStaticPaths() {
+  const entries = (await getCollection('articles'))
+    .filter((e) => !e.data.draft);
+  return entries.map((entry) => ({
+    params: { slug: entry.id.replace(/\.(md|mdx)$/, '') },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+<ArticleLayout entry={entry}>
+  <Content />
+</ArticleLayout>

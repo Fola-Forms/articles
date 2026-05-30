@@ -1,0 +1,255 @@
+---
+/**
+ * Single-article page layout. Renders the title, author byline,
+ * source citation, backdated publish date, hero image, the
+ * markdown body via <slot/>, and the mandatory disclaimer at the
+ * bottom (re-asserted in the layout even though every article
+ * includes one in its body — belt-and-braces in case an agent's
+ * draft drops it).
+ */
+import BaseLayout from './BaseLayout.astro';
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+  entry: CollectionEntry<'articles'>;
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+
+const canonical = new URL(
+  `/articles/${entry.id.replace(/\.(md|mdx)$/, '')}`,
+  Astro.site,
+).toString();
+
+const publishedDisplay = data.publishDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+const revisedDisplay = data.revisedDate?.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const heroAbs = data.heroImage
+  ? new URL(data.heroImage.src, Astro.site).toString()
+  : undefined;
+---
+<BaseLayout
+  title={`${data.title} — Fola Articles`}
+  description={data.description}
+  canonical={canonical}
+  ogImage={heroAbs}
+  publishedTime={data.publishDate.toISOString()}
+  modifiedTime={data.revisedDate?.toISOString()}
+  isArticle={true}
+>
+  <article class="article shell">
+    <header class="article__head">
+      <div class="article__eyebrow">
+        <a
+          class="pill"
+          data-authority={data.authority}
+          href={`/authority/${data.authority}`}>{data.authority}</a
+        >
+        <span class="pill">{data.category.replace(/-/g, ' ')}</span>
+      </div>
+      <h1 class="article__title">{data.title}</h1>
+      <p class="article__lede">{data.description}</p>
+      <div class="article__meta">
+        <span>{data.author}</span>
+        <span>·</span>
+        <time datetime={data.publishDate.toISOString()}>
+          Published {publishedDisplay}
+        </time>
+        {revisedDisplay && (
+          <>
+            <span>·</span>
+            <time datetime={data.revisedDate!.toISOString()}>
+              Revised {revisedDisplay}
+            </time>
+          </>
+        )}
+        {data.readingMinutes && (
+          <>
+            <span>·</span>
+            <span>{data.readingMinutes} min read</span>
+          </>
+        )}
+      </div>
+    </header>
+
+    {data.heroImage && (
+      <figure class="article__hero">
+        <img
+          src={data.heroImage.src}
+          alt={data.heroAlt ?? data.title}
+          width={data.heroImage.width}
+          height={data.heroImage.height}
+        />
+      </figure>
+    )}
+
+    <aside class="article__source">
+      <strong>Primary source.</strong>{' '}
+      <a href={data.sourceUrl} target="_blank" rel="noopener noreferrer">
+        {data.sourceUrl}
+      </a>
+      {data.sourcePdf && (
+        <>
+          {' '}— <a href={data.sourcePdf} target="_blank" rel="noopener">
+            download PDF
+          </a>
+        </>
+      )}
+    </aside>
+
+    <div class="article__body">
+      <slot />
+    </div>
+
+    <hr class="article__hr" />
+
+    <aside class="article__disclaimer">
+      <strong>Disclaimer.</strong> Fola Form Inc. is a software
+      company, not a law firm. Nothing on this page is legal advice
+      and reading it does not create an attorney-client
+      relationship. Immigration law is high-stakes and
+      fact-specific; consult a licensed immigration attorney before
+      acting on anything you read here. Policy can change without
+      notice — verify against the primary source linked above.
+      <span class="article__disclaimer-aux">
+        Some sections may be drafted with editorial assistance and
+        reviewed before publication.
+      </span>
+    </aside>
+
+    <nav class="article__tags" aria-label="Tags">
+      {data.tags.map((t) => (
+        <a class="pill" href={`/tags/${t}`}>#{t}</a>
+      ))}
+    </nav>
+  </article>
+</BaseLayout>
+
+<style>
+  .article {
+    padding: 36px 0 0;
+  }
+  .article__head {
+    margin-bottom: 28px;
+  }
+  .article__eyebrow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .article__title {
+    margin: 0 0 12px;
+    font-size: 2.6rem;
+    line-height: 1.18;
+  }
+  @media (max-width: 640px) {
+    .article__title {
+      font-size: 1.9rem;
+    }
+  }
+  .article__lede {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+  .article__meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: var(--ink-mute);
+    font-size: 13.5px;
+  }
+
+  .article__hero {
+    margin: 0 0 28px;
+  }
+  .article__hero img {
+    width: 100%;
+    border-radius: var(--radius);
+  }
+
+  .article__source {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent-ink);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin: 0 0 28px;
+    font-size: 14.5px;
+    word-break: break-all;
+  }
+  .article__source a {
+    color: var(--accent-ink);
+  }
+
+  .article__body {
+    max-width: var(--measure);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+  .article__body :global(h2) {
+    border-top: 1px solid var(--hairline);
+    padding-top: 1.2em;
+  }
+  .article__body :global(h2:first-child) {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .article__body :global(ul),
+  .article__body :global(ol) {
+    padding-left: 1.4em;
+  }
+  .article__body :global(li) {
+    margin: 0.4em 0;
+  }
+  .article__body :global(strong) {
+    color: var(--ink);
+  }
+
+  .article__hr {
+    margin: 40px 0 24px;
+    border: 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .article__disclaimer {
+    background: var(--amber-soft);
+    border-left: 3px solid var(--amber);
+    color: var(--amber);
+    padding: 14px 18px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 14px;
+    line-height: 1.55;
+    max-width: var(--measure);
+  }
+  /* Tiny ancillary line tucked at the end of the disclaimer
+   * block — same paragraph, just one notch quieter visually so
+   * it reads as a closing aside rather than a load-bearing
+   * statement. Color and weight are dialed back; size matches
+   * a footnote. */
+  .article__disclaimer-aux {
+    display: inline;
+    font-size: 11px;
+    color: var(--ink-faint);
+    opacity: 0.7;
+    margin-left: 2px;
+  }
+  .article__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px 0 0;
+    max-width: var(--measure);
+  }
+</style>

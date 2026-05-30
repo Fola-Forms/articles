@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+
+/**
+ * Homepage. Lists every PUBLISHED article (draft: false), sorted
+ * by publishDate descending — the most recent USCIS / DOS / DHS
+ * activity surfaces first.
+ *
+ * Authority + category filter chips above the grid; the
+ * /authority/[slug] and /tags/[tag] pages render the same card
+ * grid filtered down server-side, which keeps each filtered URL
+ * shareable and indexable.
+ */
+const entries = (await getCollection('articles'))
+  .filter((e) => !e.data.draft)
+  .sort(
+    (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf(),
+  );
+
+const authorities = ['USCIS', 'DOS', 'DHS', 'DOJ-EOIR', 'DOL'] as const;
+---
+<BaseLayout
+  title="Fola Articles — USCIS, DOS, and DHS immigration policy, explained"
+  description="Plain-English breakdowns of every USCIS policy memo, DOS visa cable, and DHS rule that affects immigration practice. Backdated to the agency's own announcement date."
+  canonical="https://articles.folaform.com/"
+>
+  <section class="hero shell">
+    <h1>Immigration policy, written plainly.</h1>
+    <p class="hero__lede">
+      Every USCIS memo, DOS cable, and DHS rule that touches
+      immigration practice — read once by an editor, broken down for
+      practitioners and the people they represent. Backdated to the
+      agency's own announcement date so the timeline reads
+      faithfully.
+    </p>
+    <div class="hero__chips" role="navigation" aria-label="Filter by authority">
+      <a class="pill" href="/">All</a>
+      {authorities.map((a) => (
+        <a class="pill" data-authority={a} href={`/authority/${a}`}>
+          {a}
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="list shell" aria-label="Latest articles">
+    {entries.length === 0 ? (
+      <p class="empty">
+        No articles published yet. Check back soon — the writer
+        agents are reading USCIS memos right now.
+      </p>
+    ) : (
+      <div class="grid">
+        {entries.map((entry) => <ArticleCard entry={entry} />)}
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 48px 0 28px;
+  }
+  .hero h1 {
+    margin: 0 0 14px;
+    font-size: 2.6rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  @media (max-width: 640px) {
+    .hero h1 {
+      font-size: 2rem;
+    }
+  }
+  .hero__lede {
+    font-family: var(--font-serif);
+    font-size: 1.18rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    margin: 0 0 22px;
+    max-width: 64ch;
+  }
+  .hero__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .list {
+    padding-bottom: 36px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+  .empty {
+    padding: 36px 0;
+    color: var(--ink-mute);
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+  }
+</style>

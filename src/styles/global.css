@@ -1,0 +1,251 @@
+/* articles.folaform.com — base styles.
+ *
+ * Brand tokens lifted from the workspace + docs-site so all three
+ * Fola surfaces (folaform.com, docs.folaform.com, articles.folaform.com)
+ * read as one continuous canvas. Cream paper, Google-blue accent,
+ * Inter body / Source Serif display / JetBrains Mono code.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@500;600&display=swap');
+
+:root {
+  --paper: #f5f4f0;
+  --paper-sunken: #f0eee8;
+  --paper-raised: #fafaf8;
+  --ink: #202124;
+  --ink-soft: #3c4043;
+  --ink-mute: #5f6368;
+  --ink-faint: #80868b;
+
+  --accent: #1a73e8;
+  --accent-ink: #174ea6;
+  --accent-soft: #e8f0fe;
+  --accent-soft-hover: #d2e3fc;
+
+  --amber: #b06d18;
+  --amber-soft: #fdf2dc;
+  --green: #137333;
+  --green-soft: #e6f4ea;
+  --red: #c5221f;
+  --red-soft: #fce8e6;
+
+  --hairline: #e2dfd7;
+  --hairline-soft: #efede7;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', 'Newsreader', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --measure: 68ch;
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1a1c1f;
+    --paper-sunken: #15171a;
+    --paper-raised: #22252a;
+    --ink: #e8eaed;
+    --ink-soft: #bdc1c6;
+    --ink-mute: #9aa0a6;
+    --ink-faint: #80868b;
+    --accent: #8ab4f8;
+    --accent-ink: #aecbfa;
+    --accent-soft: #1f2933;
+    --accent-soft-hover: #28323e;
+    --amber-soft: #2a221a;
+    --green-soft: #1c2922;
+    --red-soft: #2a1c1c;
+    --hairline: #2e3033;
+    --hairline-soft: #25272a;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+a:hover {
+  color: var(--accent-ink);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin: 0 0 0.4em;
+}
+h2 {
+  font-size: 1.5rem;
+  margin: 2em 0 0.6em;
+}
+h3 {
+  font-size: 1.2rem;
+  margin: 1.6em 0 0.4em;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+code {
+  background: var(--paper-sunken);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+}
+pre {
+  background: var(--paper-sunken);
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+}
+
+blockquote {
+  margin: 1.4em 0;
+  padding: 8px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* Section pills — used on the homepage filter strip + author bylines */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--paper-sunken);
+  color: var(--ink-mute);
+  border: 1px solid var(--hairline);
+  text-decoration: none;
+}
+.pill[data-authority='USCIS'] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.pill[data-authority='DOS'] {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: var(--green);
+}
+.pill[data-authority='DHS'] {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+/* Shared "site shell" — header + footer + main column.
+ * Page-level layouts compose around these primitives. */
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--hairline);
+  background: var(--paper-raised);
+}
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  gap: 24px;
+}
+.site-header__brand {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.site-header__nav {
+  display: flex;
+  gap: 22px;
+  font-size: 14.5px;
+}
+.site-header__nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.site-header__nav a:hover {
+  color: var(--accent);
+}
+
+.site-footer {
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-sunken);
+  padding: 28px 0;
+  margin-top: 64px;
+  font-size: 13.5px;
+  color: var(--ink-mute);
+}
+.site-footer__inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.site-footer a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-right: 16px;
+}
+.site-footer a:hover {
+  color: var(--accent);
+}

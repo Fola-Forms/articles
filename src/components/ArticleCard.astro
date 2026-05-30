@@ -1,0 +1,80 @@
+---
+/**
+ * Compact list-page card. Reused by the homepage list, tag index,
+ * authority index, and category index — same shape across all of
+ * them so a returning reader has a single mental model.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+  entry: CollectionEntry<'articles'>;
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const href = `/articles/${entry.id.replace(/\.(md|mdx)$/, '')}`;
+const dateDisplay = data.publishDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+<a class="card" href={href}>
+  <div class="card__eyebrow">
+    <span class="pill" data-authority={data.authority}>{data.authority}</span>
+    <time datetime={data.publishDate.toISOString()}>{dateDisplay}</time>
+  </div>
+  <h2 class="card__title">{data.title}</h2>
+  <p class="card__lede">{data.description}</p>
+  <div class="card__foot">
+    <span>{data.category.replace(/-/g, ' ')}</span>
+    {data.readingMinutes && <span>· {data.readingMinutes} min</span>}
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 22px 24px;
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color 140ms ease, transform 140ms ease,
+      box-shadow 140ms ease;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(26, 115, 232, 0.08);
+  }
+  .card__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink-mute);
+    font-size: 12.5px;
+  }
+  .card__title {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .card__lede {
+    font-family: var(--font-serif);
+    font-size: 0.98rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .card__foot {
+    font-size: 12.5px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: auto;
+  }
+</style>

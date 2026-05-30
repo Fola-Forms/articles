@@ -1,0 +1,22 @@
+{
+  "name": "articles-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "articles.folaform.com — long-form articles on USCIS / DOS / DHS immigration policy, deployed from this repo.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "new-article": "node scripts/new-article.mjs"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^5.0.0",
+    "@astrojs/rss": "^4.0.13",
+    "@astrojs/sitemap": "^3.6.0",
+    "astro": "^6.3.1",
+    "sharp": "^0.34.5"
+  }
+}

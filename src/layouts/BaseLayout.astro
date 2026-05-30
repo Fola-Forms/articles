@@ -1,0 +1,135 @@
+---
+/**
+ * Shared HTML shell — head with SEO meta, header nav, main slot,
+ * footer. Every page on articles.folaform.com extends this.
+ *
+ * Props are intentionally minimal — the article-detail layout
+ * passes a richer set (canonical, OG image, twitter card) while
+ * the list / tag / authority pages pass the basics.
+ */
+import '../styles/global.css';
+
+export interface Props {
+  /** <title> + OG title — defaults to the site brand. */
+  title: string;
+  /** <meta name="description"> + OG description. */
+  description: string;
+  /** Canonical URL for this page. Pass the full absolute URL so
+   *  Google + social cards link back here unambiguously. */
+  canonical: string;
+  /** OG image absolute URL. Falls back to the site default. */
+  ogImage?: string;
+  /** ISO publish date for article pages — added as <meta
+   *  property="article:published_time"> for OG / Twitter. */
+  publishedTime?: string;
+  /** ISO modified date — added as <meta
+   *  property="article:modified_time">. */
+  modifiedTime?: string;
+  /** Set true on article pages so the OG type flips to "article"
+   *  (default "website"). */
+  isArticle?: boolean;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage = 'https://articles.folaform.com/og-default.png',
+  publishedTime,
+  modifiedTime,
+  isArticle = false,
+} = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content={isArticle ? 'article' : 'website'} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="Fola Form — Articles" />
+    {publishedTime && (
+      <meta property="article:published_time" content={publishedTime} />
+    )}
+    {modifiedTime && (
+      <meta property="article:modified_time" content={modifiedTime} />
+    )}
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- RSS discovery for feed readers + Google Discover -->
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Fola Articles"
+      href="/rss.xml"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell site-header__inner">
+        <a class="site-header__brand" href="/">Fola Articles</a>
+        <nav class="site-header__nav" aria-label="Primary">
+          <a href="/authority/USCIS">USCIS</a>
+          <a href="/authority/DOS">DOS</a>
+          <a href="/authority/DHS">DHS</a>
+          <a href="/tags">Topics</a>
+          <a
+            href="https://folaform.com"
+            target="_blank"
+            rel="noopener"
+            >Workspace ↗</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell site-footer__inner">
+        <div>
+          <strong>Fola Form Inc.</strong> — compliance forms engine
+          for immigration practice.
+          <br />
+          <span>
+            Educational content only. Not legal advice. We are not a
+            law firm.
+          </span>
+        </div>
+        <nav aria-label="Footer">
+          <a href="/rss.xml">RSS</a>
+          <a href="https://folaform.com" target="_blank" rel="noopener"
+            >folaform.com</a
+          >
+          <a
+            href="https://docs.folaform.com"
+            target="_blank"
+            rel="noopener">Docs</a
+          >
+          <a href="https://folaform.com/legal/privacy">Privacy</a>
+          <a href="https://folaform.com/legal/terms">Terms</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
