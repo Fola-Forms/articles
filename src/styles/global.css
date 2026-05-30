@@ -402,6 +402,7 @@ hr {
 }
 .site-footer__brand-row img {
   height: 24px;
+  width: auto;
   border-radius: 0;
   border: 0;
 }
