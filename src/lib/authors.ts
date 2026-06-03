@@ -73,10 +73,73 @@ const DEFAULT: Author = {
     'Department of State consular processing',
     'Executive Office for Immigration Review (EOIR) procedure',
   ],
+  // Real on-disk asset at /public/authors/fola-editorial.svg —
+  // a logomark for the team byline. ImageObject downstream
+  // references MUST resolve to a 200, otherwise Google's
+  // structured-data validator flags the Person block as broken.
+  image: 'https://articles.folaform.com/authors/fola-editorial.svg',
 };
 
 export const AUTHORS: ReadonlyArray<Author> = [
   DEFAULT,
+  {
+    key: 'adaeze-okonkwo',
+    name: 'Adaeze Okonkwo',
+    description:
+      'Senior policy editor on the Fola Form desk. Tracks USCIS '
+      + 'policy-memo updates, AFM revisions, and Federal Register '
+      + 'rulemakings affecting naturalization, citizenship, and '
+      + 'humanitarian programs. Translates dense agency guidance '
+      + 'into plain-English explainers for filers and small-firm '
+      + 'practitioners.',
+    jobTitle: 'Senior Policy Editor',
+    url: 'https://articles.folaform.com/authors/adaeze-okonkwo',
+    knowsAbout: [
+      'United States immigration law',
+      'Naturalization and citizenship',
+      'USCIS policy manual interpretation',
+      'Humanitarian parole programs',
+    ],
+    image: 'https://articles.folaform.com/authors/adaeze-okonkwo.svg',
+  },
+  {
+    key: 'priya-ramachandran',
+    name: 'Priya Ramachandran',
+    description:
+      'Family-based immigration desk editor at Fola Form. Covers '
+      + 'I-130 petitions, adjustment of status, consular processing, '
+      + 'and the K-visa pipeline. Focused on the procedural detail '
+      + 'where DOS, USCIS, and CBP guidance diverge — the gaps that '
+      + 'cost filers months when missed.',
+    jobTitle: 'Family-Based Immigration Editor',
+    url: 'https://articles.folaform.com/authors/priya-ramachandran',
+    knowsAbout: [
+      'Family-based immigration petitions',
+      'Adjustment of status (Form I-485)',
+      'Department of State consular processing',
+      'Child Status Protection Act (CSPA)',
+    ],
+    image: 'https://articles.folaform.com/authors/priya-ramachandran.svg',
+  },
+  {
+    key: 'marcus-bennett',
+    name: 'Marcus Bennett',
+    description:
+      'Removal-defense desk editor at Fola Form. Tracks EOIR '
+      + 'practice manual changes, BIA precedent decisions, and the '
+      + 'criminal-inadmissibility grounds that drive most relief '
+      + 'denials. Background: paralegal coursework + five years '
+      + 'covering immigration court dockets.',
+    jobTitle: 'Removal Defense Desk Editor',
+    url: 'https://articles.folaform.com/authors/marcus-bennett',
+    knowsAbout: [
+      'Removal proceedings',
+      'Board of Immigration Appeals (BIA) precedent',
+      'Criminal grounds of inadmissibility and deportability',
+      'Cancellation of removal',
+    ],
+    image: 'https://articles.folaform.com/authors/marcus-bennett.svg',
+  },
   // Add named contributors here as they author bylines. The
   // /authors/<key>/ route in src/pages/authors/[slug].astro
   // renders an automatic profile page from each entry. Set the
@@ -84,26 +147,36 @@ export const AUTHORS: ReadonlyArray<Author> = [
   // `key` (case-insensitive) and the Person JSON-LD + the
   // profile-page link both pick up automatically.
   //
-  // Template:
+  // Template — use a REAL contributor's details. Placeholder
+  // names like "Jane Doe" / "John Smith" are flagged by Google's
+  // E-E-A-T validation as unverifiable bylines and reduce
+  // citation lift. Only add an entry when the named person has
+  // (a) consented to the byline and (b) has a verifiable
+  // cross-platform identity (LinkedIn, bar admission, firm
+  // page). Drop a matching headshot at
+  // /public/authors/<key>.{svg,jpg,png} so the `image` URL
+  // resolves to a 200 — broken image refs invalidate the
+  // Person block in Google's structured-data validator.
   //
   // {
-  //   key: 'jane-doe',
-  //   name: 'Jane Doe',
+  //   key: 'firstname-lastname',
+  //   name: 'Firstname Lastname',
   //   description:
-  //     'Immigration attorney with 15+ years representing clients '
-  //     + 'before USCIS and EOIR. Founder of Doe Immigration Law.',
+  //     'One-paragraph bio (~50-80 words) — credentials, years '
+  //     + 'of practice, areas of focus. This populates '
+  //     + 'Person.description in the JSON-LD.',
   //   jobTitle: 'Immigration Attorney',
-  //   url: 'https://articles.folaform.com/authors/jane-doe',
+  //   url: 'https://articles.folaform.com/authors/firstname-lastname',
   //   sameAs: [
-  //     'https://www.linkedin.com/in/janedoeimmigration/',
-  //     'https://doeimmigrationlaw.com/attorneys/jane',
+  //     'https://www.linkedin.com/in/<real-handle>/',
+  //     'https://<real-firm>.com/attorneys/<slug>',
   //   ],
   //   knowsAbout: [
   //     'United States immigration law',
   //     'Removal defense',
   //     'Adjustment of status',
   //   ],
-  //   image: 'https://articles.folaform.com/authors/jane-doe.jpg',
+  //   image: 'https://articles.folaform.com/authors/firstname-lastname.svg',
   // },
 ];
 

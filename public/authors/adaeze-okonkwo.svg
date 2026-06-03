@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Adaeze Okonkwo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0e3b2e"/>
+      <stop offset="100%" stop-color="#1d5a44"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8b657"/>
+      <stop offset="100%" stop-color="#c4882a"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="32" ry="32" fill="url(#bg)"/>
+  <g transform="translate(200 200)">
+    <circle r="120" fill="none" stroke="url(#accent)" stroke-width="3" opacity="0.55"/>
+    <circle r="98" fill="none" stroke="#f5efe2" stroke-width="1" opacity="0.18"/>
+  </g>
+  <g font-family="Georgia, 'Times New Roman', serif" text-anchor="middle">
+    <text x="200" y="218" font-size="148" font-weight="700" fill="#f5efe2" letter-spacing="-4">AO</text>
+    <text x="200" y="278" font-size="20" font-weight="500" fill="url(#accent)" letter-spacing="6">EDITOR</text>
+  </g>
+</svg>
