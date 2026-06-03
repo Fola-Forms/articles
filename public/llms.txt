@@ -1,0 +1,22 @@
+# Fola Form Articles — long-form U.S. immigration policy
+
+> Long-form articles on USCIS, DOS, DHS, and EOIR immigration
+> policy. Each article is published by Fola Form, the compliance-
+> forms platform for U.S. immigration practice. Articles cover
+> pathway explainers (EB-5, PERM, DACA, asylum), fee schedules,
+> policy updates, and case-law developments.
+
+## Sections
+
+- [All articles](https://articles.folaform.com/articles)
+- [RSS feed](https://articles.folaform.com/rss.xml)
+
+## Related domains
+
+- [folaform.com](https://folaform.com): Marketing site + workspace app
+- [docs.folaform.com](https://docs.folaform.com): Product documentation
+- [status.folaform.com](https://status.folaform.com): Live incident status
+
+## Sitemap
+
+- [articles.folaform.com/sitemap-index.xml](https://articles.folaform.com/sitemap-index.xml)
