@@ -21,6 +21,11 @@ export interface Props {
   publishedTime?: string;
   modifiedTime?: string;
   isArticle?: boolean;
+  /** Optional Schema.org JSON-LD payload. When provided, rendered
+   *  as <script type="application/ld+json"> in <head>. Article
+   *  pages pass an Article + Person + Organization + Breadcrumb
+   *  graph here; landing pages can pass a WebSite block. */
+  jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 const {
@@ -31,6 +36,7 @@ const {
   publishedTime,
   modifiedTime,
   isArticle = false,
+  jsonLd,
 } = Astro.props;
 
 const path = Astro.url.pathname;
@@ -99,6 +105,17 @@ const isActive = (prefix: string) =>
     <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
     <link rel="icon" type="image/png" href="/icon-512.png" sizes="512x512" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+
+    {/* Schema.org JSON-LD — driven by the per-page layout.
+        Search Console (Jun 2026) + the 2026 LLM-SEO research show
+        pages with Article + Person + Organization schema land
+        2-3× more AI-Overview citations than pages without. The
+        block is emitted as one <script> tag so the @graph stays
+        coherent across crawl passes. */}
+    {jsonLd && (
+      <script type="application/ld+json"
+              set:html={JSON.stringify(jsonLd)} />
+    )}
   </head>
   <body>
     <header class="site-header">
