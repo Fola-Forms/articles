@@ -1,0 +1,149 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { AUTHORS, resolveAuthor } from '../../lib/authors';
+
+/**
+ * /authors — index of every contributor with at least one
+ * published article. Each card links to /authors/<slug> where
+ * the full bio + article list lives. Surfaces the bench so a
+ * reader (or AI Overview crawler) sees the named experts behind
+ * the policy coverage at a glance.
+ */
+const all = (await getCollection('articles')).filter(
+  (e) => !e.data.draft,
+);
+
+const counts = new Map<string, number>();
+for (const entry of all) {
+  const key = resolveAuthor(entry.data.author).key;
+  counts.set(key, (counts.get(key) ?? 0) + 1);
+}
+
+// Surface every Author entry that has at least one article. Sort by
+// article count desc; ties break alphabetically by name.
+const authorsWithArticles = AUTHORS
+  .map((a) => ({ ...a, count: counts.get(a.key) ?? 0 }))
+  .filter((a) => a.count > 0)
+  .sort((a, b) =>
+    b.count - a.count || a.name.localeCompare(b.name)
+  );
+
+const canonical = 'https://articles.folaform.com/authors';
+---
+<BaseLayout
+  title="Authors — Fola Articles"
+  description="Contributors behind Fola Form's U.S. immigration policy articles — editorial team and named expert bylines."
+  canonical={canonical}
+>
+  <section class="hero shell">
+    <p class="eyebrow">Authors</p>
+    <h1>Who writes here</h1>
+    <p class="lede">
+      The editorial team and named contributors behind Fola Form's
+      immigration policy coverage. Each profile lists the articles
+      they have authored and their professional background.
+    </p>
+  </section>
+
+  <section class="list shell">
+    <div class="grid">
+      {authorsWithArticles.map((author) => (
+        <a class="card" href={`/authors/${author.key}`}>
+          <h3 class="card__name">{author.name}</h3>
+          {author.jobTitle && (
+            <p class="card__role">{author.jobTitle}</p>
+          )}
+          <p class="card__bio">{author.description}</p>
+          <p class="card__count">
+            {author.count === 1
+              ? '1 article'
+              : `${author.count} articles`}
+          </p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 48px 0 24px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .hero h1 {
+    margin: 0 0 14px;
+    font-size: 2.2rem;
+  }
+  .lede {
+    font-family: var(--font-serif);
+    font-size: 1.06rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin: 0;
+    max-width: 64ch;
+  }
+  .list {
+    padding-bottom: 36px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    display: block;
+    padding: 22px 22px 18px;
+    border: 1px solid var(--outline-soft);
+    border-radius: 14px;
+    background: var(--surface);
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color 120ms ease, transform 120ms ease;
+  }
+  .card:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    transform: translateY(-1px);
+  }
+  .card__name {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .card__role {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .card__bio {
+    margin: 0 0 12px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card__count {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+</style>

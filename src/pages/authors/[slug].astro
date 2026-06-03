@@ -1,0 +1,241 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+import { AUTHORS, resolveAuthor, personBlock } from '../../lib/authors';
+
+/**
+ * /authors/<slug> — one profile page per contributor in
+ * src/lib/authors.ts. Renders the Person's bio, credentials,
+ * cross-platform links (LinkedIn / firm site), expertise topic
+ * list, and every published article they have a byline on —
+ * sorted by the agency's own publication date.
+ *
+ * <p>SEO purpose: the March 2026 Google Core Update and the
+ * 2026 LLM-SEO research weighted "verifiable expert credentials"
+ * as a top-three citation factor for AI Overviews. A
+ * Person.url that resolves to a real page on our own domain is
+ * a much stronger signal than a third-party sameAs alone —
+ * crawlers can verify the byline exists, has expertise topics
+ * documented, and is tied to articles where Article.author
+ * references this Person via @id.
+ *
+ * <p>Article-list filtering: any article whose frontmatter
+ * `author:` resolves (case-insensitively) to this entry's key
+ * surfaces here. The default "Fola Editorial" page includes
+ * every article without a specific contributor byline so the
+ * default-author page is never empty.
+ */
+export async function getStaticPaths() {
+  const all = (await getCollection('articles')).filter(
+    (e) => !e.data.draft,
+  );
+  return AUTHORS.map((author) => ({
+    params: { slug: author.key },
+    props: {
+      author,
+      entries: all
+        .filter((e) => resolveAuthor(e.data.author).key === author.key)
+        .sort(
+          (a, b) =>
+            b.data.publishDate.valueOf() - a.data.publishDate.valueOf(),
+        ),
+    },
+  }));
+}
+
+const { author, entries } = Astro.props;
+const canonical = `https://articles.folaform.com/authors/${author.key}`;
+const articleCount = entries.length;
+
+// JSON-LD graph for this page: ProfilePage + Person + every
+// article they wrote (CollectionPage with hasPart). Google's
+// 2026 docs recommend ProfilePage for author pages so the
+// resulting URL becomes a verified author landing in the
+// E-E-A-T graph.
+const jsonLdGraph: Array<Record<string, unknown>> = [
+  {
+    '@type': 'ProfilePage',
+    '@id': canonical + '#page',
+    'name': `${author.name} — Fola Articles`,
+    'description':
+      `${author.name} on Fola Articles. ${articleCount} `
+      + `article${articleCount === 1 ? '' : 's'} on U.S. immigration `
+      + `policy across USCIS, DOS, DHS, and EOIR.`,
+    'url': canonical,
+    'mainEntity': { '@id': canonical + '#person' },
+    'breadcrumb': { '@id': canonical + '#breadcrumb' },
+  },
+  // The Person block — same shape personBlock() emits on each
+  // article page, but with @id pinned to this profile URL so
+  // Google can verify Article.author === ProfilePage.mainEntity.
+  {
+    ...personBlock(author),
+    '@id': canonical + '#person',
+    'url': canonical,
+    // mainEntityOfPage links back so Search recognises this
+    // ProfilePage as the canonical place to find more info
+    // about the author.
+    'mainEntityOfPage': { '@id': canonical + '#page' },
+  },
+  {
+    '@type': 'BreadcrumbList',
+    '@id': canonical + '#breadcrumb',
+    'itemListElement': [
+      { '@type': 'ListItem', 'position': 1,
+        'name': 'Articles',
+        'item': 'https://articles.folaform.com/' },
+      { '@type': 'ListItem', 'position': 2,
+        'name': 'Authors',
+        'item': 'https://articles.folaform.com/authors/' },
+      { '@type': 'ListItem', 'position': 3,
+        'name': author.name,
+        'item': canonical },
+    ],
+  },
+];
+const jsonLd = { '@context': 'https://schema.org', '@graph': jsonLdGraph };
+---
+<BaseLayout
+  title={`${author.name} — Fola Articles`}
+  description={
+    `${author.name} on Fola Articles. ${articleCount} article`
+    + `${articleCount === 1 ? '' : 's'} on U.S. immigration policy.`
+  }
+  canonical={canonical}
+  jsonLd={jsonLd}
+>
+  <section class="hero shell">
+    <a class="pill" href="/authors">Authors</a>
+    <h1>{author.name}</h1>
+    {author.jobTitle && <p class="hero__role">{author.jobTitle}</p>}
+    <p class="hero__bio">{author.description}</p>
+
+    {(author.knowsAbout && author.knowsAbout.length > 0) && (
+      <ul class="hero__expertise" aria-label="Expertise areas">
+        {author.knowsAbout.map((topic: string) => (
+          <li>{topic}</li>
+        ))}
+      </ul>
+    )}
+
+    {(author.sameAs && author.sameAs.length > 0) && (
+      <ul class="hero__links" aria-label="Cross-platform links">
+        {author.sameAs.map((url: string) => {
+          let host = url;
+          try { host = new URL(url).hostname.replace(/^www\./, ''); }
+          catch { /* keep raw url */ }
+          return (
+            <li>
+              <a href={url} target="_blank" rel="noopener nofollow">{host}</a>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </section>
+
+  <section class="list shell">
+    <h2 class="list__title">
+      {articleCount === 0
+        ? 'No articles yet'
+        : articleCount === 1
+          ? '1 article'
+          : `${articleCount} articles`}
+    </h2>
+    {articleCount > 0 && (
+      <div class="grid">
+        {entries.map((entry) => <ArticleCard entry={entry} />)}
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 48px 0 24px;
+  }
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 999px;
+  }
+  .hero h1 {
+    margin: 14px 0 4px;
+    font-size: 2.2rem;
+  }
+  .hero__role {
+    margin: 0 0 14px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .hero__bio {
+    font-family: var(--font-serif);
+    font-size: 1.06rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    max-width: 64ch;
+    margin: 0 0 18px;
+  }
+  .hero__expertise {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hero__expertise li {
+    font-size: 12px;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .hero__links {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .hero__links a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  .hero__links a:hover {
+    border-bottom-style: solid;
+  }
+  .list {
+    padding: 32px 0;
+  }
+  .list__title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin: 0 0 16px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+  }
+</style>

@@ -58,10 +58,14 @@ const DEFAULT: Author = {
     + 'and EOIR policy updates and translate them into plain-'
     + 'English guides for filers and small-firm attorneys.',
   jobTitle: 'Editorial Team',
-  url: 'https://folaform.com/about',
+  // Resolves to the ProfilePage at /authors/fola-editorial — a
+  // verifiable landing on our own domain is a much stronger
+  // E-E-A-T signal than a generic /about page would be.
+  url: 'https://articles.folaform.com/authors/fola-editorial',
   sameAs: [
     'https://folaform.com',
     'https://docs.folaform.com',
+    'https://folaform.com/about',
   ],
   knowsAbout: [
     'United States immigration law',
@@ -73,7 +77,14 @@ const DEFAULT: Author = {
 
 export const AUTHORS: ReadonlyArray<Author> = [
   DEFAULT,
-  // Add named contributors here as they author bylines. Example:
+  // Add named contributors here as they author bylines. The
+  // /authors/<key>/ route in src/pages/authors/[slug].astro
+  // renders an automatic profile page from each entry. Set the
+  // `author:` field in the article frontmatter to the entry's
+  // `key` (case-insensitive) and the Person JSON-LD + the
+  // profile-page link both pick up automatically.
+  //
+  // Template:
   //
   // {
   //   key: 'jane-doe',
@@ -82,15 +93,17 @@ export const AUTHORS: ReadonlyArray<Author> = [
   //     'Immigration attorney with 15+ years representing clients '
   //     + 'before USCIS and EOIR. Founder of Doe Immigration Law.',
   //   jobTitle: 'Immigration Attorney',
-  //   url: 'https://doeimmigrationlaw.com/attorneys/jane',
+  //   url: 'https://articles.folaform.com/authors/jane-doe',
   //   sameAs: [
   //     'https://www.linkedin.com/in/janedoeimmigration/',
+  //     'https://doeimmigrationlaw.com/attorneys/jane',
   //   ],
   //   knowsAbout: [
   //     'United States immigration law',
   //     'Removal defense',
   //     'Adjustment of status',
   //   ],
+  //   image: 'https://articles.folaform.com/authors/jane-doe.jpg',
   // },
 ];
 
