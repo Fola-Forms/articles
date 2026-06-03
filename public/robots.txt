@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://articles.folaform.com/sitemap-index.xml
