@@ -7,6 +7,8 @@
  */
 import BaseLayout from './BaseLayout.astro';
 import PageFeedback from '../components/PageFeedback.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { getCollection } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { resolveAuthor, personBlock } from '../lib/authors';
 
@@ -17,6 +19,38 @@ export interface Props {
 const { entry } = Astro.props;
 const { data } = entry;
 const slug = entry.id.replace(/\.(md|mdx)$/, '');
+
+// ── Related articles ────────────────────────────────────────
+//
+// Scoring (highest wins):
+//   +5 same authority
+//   +4 same category
+//   +2 per overlapping tag (capped at 6 — three matching tags is
+//       already a strong signal, more shouldn't dominate the
+//       authority/category match)
+//
+// Excludes self + drafts. Ties broken by publish date desc so a
+// fresher article wins. Top 3 surface as the related strip.
+const relatedCandidates = (await getCollection('articles'))
+  .filter((e) => !e.data.draft && e.id !== entry.id);
+const tagSet = new Set(data.tags);
+const scored = relatedCandidates.map((c) => {
+  let score = 0;
+  if (c.data.authority === data.authority) score += 5;
+  if (c.data.category === data.category) score += 4;
+  let tagOverlap = 0;
+  for (const t of c.data.tags) if (tagSet.has(t)) tagOverlap++;
+  score += Math.min(tagOverlap, 3) * 2;
+  return { entry: c, score };
+});
+const related = scored
+  .filter((s) => s.score > 0)
+  .sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.entry.data.publishDate.getTime() - a.entry.data.publishDate.getTime();
+  })
+  .slice(0, 3)
+  .map((s) => s.entry);
 
 const canonical = new URL(`/articles/${slug}`, Astro.site).toString();
 
@@ -123,6 +157,26 @@ const articleJsonLd = {
   jsonLd={articleJsonLd}
 >
   <article class="article">
+    <!-- Back navigation. Defaults to /articles (works without JS
+         on direct nav) and upgrades to history.back() when the
+         user came from another page on this same site — the
+         enhancement is the small <script> at the bottom of this
+         file. -->
+    <nav class="article__back shell" aria-label="Back to articles">
+      <a class="article__back-link" href="/articles" data-back>
+        <svg
+          aria-hidden="true"
+          width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        >
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+        <span data-back-label>All articles</span>
+      </a>
+    </nav>
+
     <header class="article__head shell">
       <div class="article__eyebrow">
         <a
@@ -212,7 +266,44 @@ const articleJsonLd = {
 
       <PageFeedback />
     </div>
+
+    {related.length > 0 && (
+      <section class="article__related shell" aria-labelledby="related-heading">
+        <header class="article__related-head">
+          <h2 id="related-heading" class="article__related-title">Related articles</h2>
+          <a class="article__related-more" href="/articles">Browse all →</a>
+        </header>
+        <div class="article__related-grid">
+          {related.map((rel) => (
+            <ArticleCard entry={rel} variant="compact" />
+          ))}
+        </div>
+      </section>
+    )}
   </article>
+
+  <script>
+    // Progressive enhancement on the back button. When the user
+    // arrived from another page on articles.folaform.com (same
+    // origin), swap the link's behaviour to history.back() so the
+    // browser scroll position + filter state is restored. Direct
+    // landings (referrer empty or off-site) keep the static
+    // /articles fallback.
+    document.querySelectorAll<HTMLAnchorElement>('a[data-back]').forEach((a) => {
+      try {
+        const ref = document.referrer;
+        if (!ref) return;
+        const refOrigin = new URL(ref).origin;
+        if (refOrigin !== window.location.origin) return;
+        const label = a.querySelector<HTMLElement>('[data-back-label]');
+        if (label) label.textContent = 'Back';
+        a.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          history.back();
+        });
+      } catch { /* malformed referrer — keep the static fallback */ }
+    });
+  </script>
 </BaseLayout>
 
 <style>
@@ -436,5 +527,94 @@ const articleJsonLd = {
     gap: 8px;
     margin: 32px auto 0;
     max-width: var(--measure);
+  }
+
+  /* Back navigation — sits above the article header at the same
+     measure column the title uses. Subtle but obvious chrome:
+     muted text, accent on hover, a small chevron icon. The
+     progressive-enhancement script swaps the label to "Back"
+     when the user is returning from another page on this site. */
+  .article__back {
+    max-width: var(--measure);
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 28px;
+    padding-bottom: 0;
+  }
+  @media (max-width: 640px) {
+    .article__back { padding-top: 18px; }
+  }
+  .article__back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 6px;
+    margin-left: -6px;
+    border-radius: var(--radius-xs);
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: color 120ms ease, background 120ms ease;
+  }
+  .article__back-link:hover {
+    color: var(--accent);
+    background: var(--bg-accent);
+    text-decoration: none;
+  }
+  .article__back-link svg {
+    transition: transform 140ms ease;
+  }
+  .article__back-link:hover svg {
+    transform: translateX(-2px);
+  }
+
+  /* Related articles strip — sits below the feedback widget. Uses
+     the same compact ArticleCard variant the homepage sidebar
+     would, so styling stays consistent across the site. */
+  .article__related {
+    max-width: var(--measure);
+    margin: 56px auto 0;
+    padding-top: 32px;
+    border-top: 1px solid var(--hairline);
+  }
+  .article__related-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .article__related-title {
+    font-family: var(--font-display);
+    margin: 0;
+    font-size: 1.4rem;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+  }
+  .article__related-more {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .article__related-more:hover {
+    color: var(--accent);
+  }
+  .article__related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  @media (max-width: 640px) {
+    .article__related { margin-top: 40px; padding-top: 24px; }
+    .article__related-grid { grid-template-columns: 1fr; }
   }
 </style>
