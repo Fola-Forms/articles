@@ -1,8 +1,8 @@
 # Fola Articles — long-form U.S. immigration policy
 
 > Long-form articles on USCIS, DOS, DHS, and EOIR immigration
-> policy. Each article is published by Fola, the compliance-
-> forms platform for U.S. immigration practice. Articles cover
+> policy. Each article is published by Fola, an AI-native
+> immigration & compliance practice. Articles cover
 > pathway explainers (EB-5, PERM, DACA, asylum), fee schedules,
 > policy updates, and case-law developments.
 
