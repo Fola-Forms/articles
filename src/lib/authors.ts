@@ -53,7 +53,7 @@ const DEFAULT: Author = {
   key: 'fola-editorial',
   name: 'Fola Editorial',
   description:
-    'The Fola Form editorial team — researchers and immigration '
+    'The Fola editorial team — researchers and immigration '
     + 'professionals who track USCIS, Department of State, DHS, '
     + 'and EOIR policy updates and translate them into plain-'
     + 'English guides for filers and small-firm attorneys.',
@@ -86,7 +86,7 @@ export const AUTHORS: ReadonlyArray<Author> = [
     key: 'adaeze-okonkwo',
     name: 'Adaeze Okonkwo',
     description:
-      'Senior policy editor on the Fola Form desk. Tracks USCIS '
+      'Senior policy editor on the Fola desk. Tracks USCIS '
       + 'policy-memo updates, AFM revisions, and Federal Register '
       + 'rulemakings affecting naturalization, citizenship, and '
       + 'humanitarian programs. Translates dense agency guidance '
@@ -106,7 +106,7 @@ export const AUTHORS: ReadonlyArray<Author> = [
     key: 'priya-ramachandran',
     name: 'Priya Ramachandran',
     description:
-      'Family-based immigration desk editor at Fola Form. Covers '
+      'Family-based immigration desk editor at Fola. Covers '
       + 'I-130 petitions, adjustment of status, consular processing, '
       + 'and the K-visa pipeline. Focused on the procedural detail '
       + 'where DOS, USCIS, and CBP guidance diverge — the gaps that '
@@ -125,7 +125,7 @@ export const AUTHORS: ReadonlyArray<Author> = [
     key: 'marcus-bennett',
     name: 'Marcus Bennett',
     description:
-      'Removal-defense desk editor at Fola Form. Tracks EOIR '
+      'Removal-defense desk editor at Fola. Tracks EOIR '
       + 'practice manual changes, BIA precedent decisions, and the '
       + 'criminal-inadmissibility grounds that drive most relief '
       + 'denials. Background: paralegal coursework + five years '
@@ -220,7 +220,7 @@ export function personBlock(author: Author): Record<string, unknown> {
   block['worksFor'] = {
     '@type': 'Organization',
     '@id': 'https://folaform.com/#org',
-    'name': 'Fola Form',
+    'name': 'Fola',
     'url': 'https://folaform.com',
   };
   return block;
